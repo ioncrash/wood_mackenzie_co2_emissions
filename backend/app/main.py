@@ -11,9 +11,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/api/hello")
-def read_root():
-    return {"message": "Welcome to ERGSummarizR!"}
 
 @app.get("/api/echo")
 def echo(state: str, fuel: str, sector: str, tone: str):

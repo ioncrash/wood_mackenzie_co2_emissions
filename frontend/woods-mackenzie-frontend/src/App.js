@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 function App() {
-  const [message, setMessage] = useState("");
   const [response, setResponse] = useState("");
 
   const [form, setForm] = useState({
@@ -10,14 +9,6 @@ function App() {
     sector: "",
     tone: ""
   });
-
-  console.log("NODE_ENV:", process.env.NODE_ENV);
-
-  useEffect(() => {
-    fetch("http://localhost:8000/api/hello")
-      .then((res) => res.json())
-      .then((data) => setMessage(data.message));
-  }, []);
 
   const handleChangeForm = (e) => {
     const { name, value } = e.target;
@@ -36,7 +27,14 @@ function App() {
 
   return (
     <div style={{ padding: "2rem" }}>
-      <h1>{message}</h1>
+      <h1>Welcome to my CO2 Emission Summarizer!</h1>
+
+      <p>This app will retrieve historical CO2 emission data provided by the U.S. Energy Information Administration, then send it to Claude AI to summarize for you.</p>
+      <p>You have a few options for what data to retrieve:</p>
+      <p>state: The name of the US state you'd like to see</p>
+      <p>fuel: The type of fuel you'd like to see - leaving this empty will return the total of all fuels</p>
+      <p>sector: The sector you'd like to see (e.g. residential, industrial)</p>
+      <p>tone: The tone you would like Claude to respond in. Please use an adverb (e.g. professionally, sarcastically)</p>
 
       <form onSubmit={handleSubmit}>
         <input
