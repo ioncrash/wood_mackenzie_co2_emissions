@@ -56,8 +56,17 @@ You will need:
 - Python 3.8+
 - Node.js + npm (v18+ recommended)
 - AWS credentials with Bedrock access
+- Active EIA API key
 
 # Running the back end
+Create a .env file in the directory backend/app/
+
+It should have these contents
+
+EIA_API_KEY=[your_eia_api_key_here]
+AWS_REGION=[your_aws_region]
+
+
 Run these commands
 
 cd backend

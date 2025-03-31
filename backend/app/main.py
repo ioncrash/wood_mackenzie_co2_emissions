@@ -1,10 +1,17 @@
+import os
+
 import json
 from typing import Any, Dict, List
+from dotenv import load_dotenv
 
 import boto3
 import requests
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+load_dotenv()
+EIA_API_KEY = os.getenv("EIA_API_KEY")
+AWS_REGION = os.getenv("AWS_REGION")
 
 app = FastAPI()
 
@@ -34,8 +41,7 @@ def perform_get_request(url: str, headers: Dict[str, Any]):
 
 
 def request_eia_data(state: str, fuel: str, sector: str):
-    # In a full web app we would hold the api key in secrets or an environment variable. For the sake of simplicity, I'm hard coding for now
-    eia_url = "https://api.eia.gov/v2/co2-emissions/co2-emissions-aggregates/data?api_key=d4eTbnwrwg3T8Dzlw1pP2ErvZAlTjqrrjaWdNskc"
+    eia_url = f"https://api.eia.gov/v2/co2-emissions/co2-emissions-aggregates/data?api_key={EIA_API_KEY}"
 
     eia_params = {
         "frequency": "annual",
@@ -93,7 +99,7 @@ def construct_claude_prompt(
 def perform_claude_request(
     state: str, fuel: str, sector: str, tone: str, data: List[Dict[str, Any]]
 ):
-    bedrock = boto3.client("bedrock-runtime", region_name="us-east-1")
+    bedrock = boto3.client("bedrock-runtime", region_name=AWS_REGION)
 
     prompt = construct_claude_prompt(
         state=state, fuel=fuel, sector=sector, tone=tone, data=data
