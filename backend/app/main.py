@@ -1,8 +1,8 @@
-import boto3
 import json
 from typing import Any, Dict, List
-import requests
 
+import boto3
+import requests
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
