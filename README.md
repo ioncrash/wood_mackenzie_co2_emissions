@@ -81,10 +81,10 @@ This should spin up your back-end server
 ## Running the front end
 Run these commands 
 
-cd frontend/woods-mackenzie-frontend
+cd woods-mackenzie-frontend
 npm install
 npm start
 
 There should now be a front-end server running. You can now visit http://localhost:3000/ in your browser
 
-I also left the readme that came with the React scaffold I'm using, which has more info on the frontend server
+I also left the readme that came with create-react-app, the React scaffold I'm using. You can find it in woods-mackenzie-frontend/, and it has more info on the frontend server
