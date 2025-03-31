@@ -20,7 +20,7 @@ function App() {
 
     const query = new URLSearchParams(form).toString();
 
-    fetch(`http://localhost:8000/api/echo?${query}`)
+    fetch(`http://localhost:8000/api/retrieve?${query}`)
       .then((res) => res.json())
       .then((data) => setResponse(data.message));
   };
