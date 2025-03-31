@@ -1,6 +1,6 @@
+import boto3
 import json
-import os
-from typing import Any, Dict
+from typing import Any, Dict, List
 import requests
 
 from fastapi import FastAPI
@@ -63,6 +63,69 @@ def request_eia_data(state: str, fuel: str, sector: str):
 
     return perform_get_request(url=eia_url, headers=eia_headers)
 
+
+def construct_claude_prompt(state: str, fuel: str, sector: str, tone: str, data: List[Dict[str, Any]]):
+    fuel_lookup = {
+        "CO": "coal",
+        "NG": "natural gas",
+        "PE": "petroleum",
+        "TO": "all fuel"
+    }
+
+    fuel_str = fuel_lookup[fuel]
+
+    sector_lookup = {
+        "CC": "commercial",
+        "IC": "industrial",
+        "TC": "transportation",
+        "EC": "electric power",
+        "RC": "residential"
+    }
+
+    sector_str = sector_lookup[sector]
+
+    return f"""
+        This is a set of data containing CO2 emissions in the state of {state} for the {fuel_str} in the {sector_str} sector. 
+        
+        {data}
+        
+        Summarize any trends you see as a bullet pointed list, making note of any peaks, valleys, or anomalies. There may be more than one of each. 
+
+        Include a section about each decade and broad changes that occured within that decade.
+
+        Do this {tone}
+
+        There's no need to comment that there are many possible factors behind these fluctuations, or to comment that further analysis and context are required. Just the summary, please.
+
+        Format your response as html using bullet points, with an empty line between each bullet point
+    """
+
+
+def perform_claude_request(state: str, fuel: str, sector: str, tone: str, data: List[Dict[str, Any]]):
+    bedrock = boto3.client("bedrock-runtime", region_name="us-east-1")
+
+    prompt = construct_claude_prompt(state=state, fuel=fuel, sector=sector, tone=tone, data=data)
+
+    body = {
+        "messages": [
+            {
+                "role": "user",
+                "content": prompt.strip()
+            }
+        ],
+        "anthropic_version": "bedrock-2023-05-31",
+        "max_tokens": 500,
+        "temperature": 0.7
+    }
+
+    return bedrock.invoke_model(
+            modelId="anthropic.claude-3-sonnet-20240229-v1:0",
+            contentType="application/json",
+            accept="application/json",
+            body=json.dumps(body)
+        )
+
+
 @app.get("/api/retrieve")
 def retrieve(state: str, fuel: str, sector: str, tone: str = "professionally"):
     try:
@@ -74,8 +137,24 @@ def retrieve(state: str, fuel: str, sector: str, tone: str = "professionally"):
             print(message)
             return {"message": message}
     except Exception as e:
-        message = f"Unknown exception when sending a request to EIA. Error: {e}"
+        message = f"Encountered exception when sending a request to EIA. Error: {e}"
+        print(message)
+        return {"message": message}
+    
+    try:
+        claude_response = perform_claude_request(state=state, fuel=fuel, sector=sector, tone=tone, data=data)
+
+        claude_response_body = json.loads(claude_response["body"].read())
+
+        if not claude_response_body["content"] or not claude_response_body["content"][0]["text"]:
+            message = f"No text in response from Claude. claude_response_body: {claude_response_body}"
+            print(message)
+            return {"message": message}
+        
+        message = claude_response_body["content"][0]["text"]
+    except Exception as e:
+        message = f"Encountered exception when sending a request to Claude. Error: {e}"
         print(message)
         return {"message": message}
 
-    return {"message": "a successful retrieval", "data": data}
+    return {"message": message, "data": data}
