@@ -42,6 +42,10 @@ As it stands, the app is pretty slow. There are a few things we could do about t
 
 
 # Considerations and improvements for the app in general
+An interesting expansion would be to allow the user to make consecutive requests. For example:
+User requests the app to summarize Coal emissions from Alabama
+Then the user requests the app to summarize Natural Gas emissions. The app performs the summary, and also calls out any direct or inverse correlations between the data sets.
+
 The app is lacking in some of the guardrails I would expect for a full-stack app, such as handling invalid input on both the front and back ends and gracefully handling some kinds of errors. 
 
 Unit and integration tests would be useful, especially on the front end
