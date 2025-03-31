@@ -63,26 +63,26 @@ Create a .env file in the directory backend/app/
 
 It should have these contents
 
-EIA_API_KEY=[your_eia_api_key_here]
+EIA_API_KEY=[your_eia_api_key_here]  
 AWS_REGION=[your_aws_region]
 
 
 Run these commands on the cli
 
-aws configure
-    - follow the prompts to set up your credentials if you haven't already
-cd backend
-pip install -r requirements.txt
-cd app
-uvicorn main:app --reload
+aws configure  
+    - follow the prompts to set up your credentials if you haven't already  
+cd backend  
+pip install -r requirements.txt  
+cd app  
+uvicorn main:app --reload  
 
 This should spin up your back-end server
 
 ## Running the front end
 Run these commands 
 
-cd frontend/woods-mackenzie-frontend
-npm install
+cd frontend/woods-mackenzie-frontend  
+npm install  
 npm start
 
 There should now be a front-end server running. You can now visit http://localhost:3000/ in your browser
