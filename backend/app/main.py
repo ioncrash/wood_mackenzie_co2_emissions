@@ -1,11 +1,10 @@
-import os
-
 import json
+import os
 from typing import Any, Dict, List
-from dotenv import load_dotenv
 
 import boto3
 import requests
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
