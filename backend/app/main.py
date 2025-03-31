@@ -31,10 +31,9 @@ def perform_get_request(url: str, headers: Dict[str, Any]):
         message = f"Exception when sending a request to {url} with headers {headers}. Error: {e}"
         print(message)
         raise Exception(message)
+    
 
-
-@app.get("/api/retrieve")
-def retrieve(state: str, fuel: str, sector: str, tone: str = "professionally"):
+def request_eia_data(state: str, fuel: str, sector: str):
     # In a full web app we would hold the api key in secrets or an environment variable. For the sake of simplicity, I'm hard coding for now
     eia_url = "https://api.eia.gov/v2/co2-emissions/co2-emissions-aggregates/data?api_key=d4eTbnwrwg3T8Dzlw1pP2ErvZAlTjqrrjaWdNskc"
 
@@ -62,15 +61,18 @@ def retrieve(state: str, fuel: str, sector: str, tone: str = "professionally"):
         "X-Params": json.dumps(eia_params)
     }
 
+    return perform_get_request(url=eia_url, headers=eia_headers)
+
+@app.get("/api/retrieve")
+def retrieve(state: str, fuel: str, sector: str, tone: str = "professionally"):
     try:
-        eia_result = perform_get_request(url=eia_url, headers=eia_headers)
-        
+        eia_result = request_eia_data(state=state, fuel=fuel, sector=sector)
+
         data = eia_result.get("response", {}).get("data")
         if not data:
             message = f"No data in response from EIA. eia_result: {eia_result}"
             print(message)
             return {"message": message}
-    
     except Exception as e:
         message = f"Unknown exception when sending a request to EIA. Error: {e}"
         print(message)
