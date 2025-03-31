@@ -76,7 +76,7 @@ pip install -r requirements.txt
 cd app
 uvicorn main:app --reload
 
-This should spin up your back-end server. You may need to pip install some dependencies first
+This should spin up your back-end server
 
 ## Running the front end
 Run these commands 
