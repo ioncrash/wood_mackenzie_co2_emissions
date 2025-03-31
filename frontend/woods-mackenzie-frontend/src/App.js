@@ -125,7 +125,7 @@ function App() {
           onChange={handleChangeForm}
           style={{ marginBottom: "1rem", display: "block" }}
         />
-        <button type="submit">Send</button>
+        <button type="submit">Submit</button>
       </form>
 
       <p style={{ marginTop: "1rem", whiteSpace: "pre-wrap" }}>

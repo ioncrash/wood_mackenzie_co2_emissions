@@ -24,14 +24,14 @@ def perform_get_request(url: str, headers: Dict[str, Any]):
             message = f"Request to {url} with headers {headers} was unsuccessful. Error {response.status_code}: {response.text}"
             print(message)
             raise Exception(message)
-        
+
         return json.loads(response.text)
-    
+
     except Exception as e:
         message = f"Exception when sending a request to {url} with headers {headers}. Error: {e}"
         print(message)
         raise Exception(message)
-    
+
 
 def request_eia_data(state: str, fuel: str, sector: str):
     # In a full web app we would hold the api key in secrets or an environment variable. For the sake of simplicity, I'm hard coding for now
@@ -40,36 +40,27 @@ def request_eia_data(state: str, fuel: str, sector: str):
     eia_params = {
         "frequency": "annual",
         "data": ["value"],
-        "facets": {
-            "stateId": [state], 
-            "fuelId": [fuel],
-            "sectorId": [sector]
-        },
+        "facets": {"stateId": [state], "fuelId": [fuel], "sectorId": [sector]},
         "start": "1970",
         "end": "2022",
-        "sort": [
-            {
-                "column": "period",
-                "direction": "desc"
-            }
-        ],
+        "sort": [{"column": "period", "direction": "desc"}],
         "offset": 0,
-        "length": 5000
+        "length": 5000,
     }
 
-    eia_headers = {
-        "X-Params": json.dumps(eia_params)
-    }
+    eia_headers = {"X-Params": json.dumps(eia_params)}
 
     return perform_get_request(url=eia_url, headers=eia_headers)
 
 
-def construct_claude_prompt(state: str, fuel: str, sector: str, tone: str, data: List[Dict[str, Any]]):
+def construct_claude_prompt(
+    state: str, fuel: str, sector: str, tone: str, data: List[Dict[str, Any]]
+):
     fuel_lookup = {
         "CO": "coal",
         "NG": "natural gas",
         "PE": "petroleum",
-        "TO": "all fuel"
+        "TO": "all fuel",
     }
 
     fuel_str = fuel_lookup[fuel]
@@ -79,7 +70,7 @@ def construct_claude_prompt(state: str, fuel: str, sector: str, tone: str, data:
         "IC": "industrial",
         "TC": "transportation",
         "EC": "electric power",
-        "RC": "residential"
+        "RC": "residential",
     }
 
     sector_str = sector_lookup[sector]
@@ -99,29 +90,28 @@ def construct_claude_prompt(state: str, fuel: str, sector: str, tone: str, data:
     """
 
 
-def perform_claude_request(state: str, fuel: str, sector: str, tone: str, data: List[Dict[str, Any]]):
+def perform_claude_request(
+    state: str, fuel: str, sector: str, tone: str, data: List[Dict[str, Any]]
+):
     bedrock = boto3.client("bedrock-runtime", region_name="us-east-1")
 
-    prompt = construct_claude_prompt(state=state, fuel=fuel, sector=sector, tone=tone, data=data)
+    prompt = construct_claude_prompt(
+        state=state, fuel=fuel, sector=sector, tone=tone, data=data
+    )
 
     body = {
-        "messages": [
-            {
-                "role": "user",
-                "content": prompt.strip()
-            }
-        ],
+        "messages": [{"role": "user", "content": prompt.strip()}],
         "anthropic_version": "bedrock-2023-05-31",
         "max_tokens": 500,
-        "temperature": 0.7
+        "temperature": 0.7,
     }
 
     return bedrock.invoke_model(
-            modelId="anthropic.claude-3-sonnet-20240229-v1:0",
-            contentType="application/json",
-            accept="application/json",
-            body=json.dumps(body)
-        )
+        modelId="anthropic.claude-3-sonnet-20240229-v1:0",
+        contentType="application/json",
+        accept="application/json",
+        body=json.dumps(body),
+    )
 
 
 @app.get("/api/retrieve")
@@ -138,21 +128,26 @@ def retrieve(state: str, fuel: str, sector: str, tone: str = "professionally"):
         message = f"Encountered exception when sending a request to EIA. Error: {e}"
         print(message)
         return {"message": message}
-    
+
     try:
-        claude_response = perform_claude_request(state=state, fuel=fuel, sector=sector, tone=tone, data=data)
+        claude_response = perform_claude_request(
+            state=state, fuel=fuel, sector=sector, tone=tone, data=data
+        )
 
         claude_response_body = json.loads(claude_response["body"].read())
 
-        if not claude_response_body["content"] or not claude_response_body["content"][0]["text"]:
+        if (
+            not claude_response_body["content"]
+            or not claude_response_body["content"][0]["text"]
+        ):
             message = f"No text in response from Claude. claude_response_body: {claude_response_body}"
             print(message)
             return {"message": message}
-        
+
         message = claude_response_body["content"][0]["text"]
     except Exception as e:
         message = f"Encountered exception when sending a request to Claude. Error: {e}"
         print(message)
         return {"message": message}
 
-    return {"message": message, "data": data}
+    return {"message": message}
