@@ -38,8 +38,8 @@ A simple FastAPI back end with just one endpoint
 ## Considerations and improvements for the back end:
 As it stands, the app is pretty slow. There are a few things we could do about that:
 
-Give the user more control over the time period they want to analyze. Right now it always looks at all the historical data that's available. Since there's only so much data in the first place, that seemed to me like a more interesting option than limiting it to a few years, but as it turns out, it takes Claude a long time to analyze 50 years of data
-Store the CO2 emission data somewhere rather than pinging EIA every time. Since it's historical data, it will never change anyway, so we might as well just have it in a DB or some other storage
+- Give the user more control over the time period they want to analyze. Right now it always looks at all the historical data that's available. Since there's only so much data in the first place, that seemed to me like a more interesting option than limiting it to a few years, but as it turns out, it takes Claude a long time to analyze 50 years of data
+- Store the CO2 emission data somewhere rather than pinging EIA every time. Since it's historical data, it will never change anyway, so we might as well just have it in a DB or some other storage
 
 
 # Considerations and improvements for the app in general
