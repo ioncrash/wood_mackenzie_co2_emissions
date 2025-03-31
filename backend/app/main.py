@@ -128,11 +128,11 @@ def retrieve(state: str, fuel: str, sector: str, tone: str = "professionally"):
         if not data:
             message = f"No data in response from EIA. eia_result: {eia_result}"
             print(message)
-            return {"message": message}
+            return {"message": message, "data": []}
     except Exception as e:
         message = f"Encountered exception when sending a request to EIA. Error: {e}"
         print(message)
-        return {"message": message}
+        return {"message": message, "data": []}
 
     try:
         claude_response = perform_claude_request(
@@ -147,12 +147,12 @@ def retrieve(state: str, fuel: str, sector: str, tone: str = "professionally"):
         ):
             message = f"No text in response from Claude. claude_response_body: {claude_response_body}"
             print(message)
-            return {"message": message}
+            return {"message": message, "data": []}
 
         message = claude_response_body["content"][0]["text"]
     except Exception as e:
         message = f"Encountered exception when sending a request to Claude. Error: {e}"
         print(message)
-        return {"message": message}
+        return {"message": message, "data": []}
 
-    return {"message": message}
+    return {"message": message, "data": data}

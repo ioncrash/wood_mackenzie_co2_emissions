@@ -3,6 +3,7 @@ import { useState } from "react";
 function App() {
   const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
+  const [tableData, setTableData] = useState([]);
 
   const [form, setForm] = useState({
     state: "",
@@ -26,7 +27,14 @@ function App() {
 
     fetch(`http://localhost:8000/api/retrieve?${query}`)
       .then((res) => res.json())
-      .then((data) => setResponse(data.message))
+      .then((data) => {
+        setResponse(data.message);
+      
+        const sortedTable = [...(data.data || [])].sort(
+          (a, b) => Number(b.period) - Number(a.period)
+        );
+        setTableData(sortedTable);
+      })
       .catch((err) => {
         console.error("Request failed:", err);
         setResponse("Error: Something went wrong.");
@@ -55,6 +63,18 @@ function App() {
     TC: "transportation",
     EC: "electric power",
     RC: "residential"
+  };
+
+  const thStyle = {
+    border: "1px solid #ccc",
+    padding: "0.5rem",
+    backgroundColor: "#f4f4f4",
+    textAlign: "left"
+  };
+  
+  const tdStyle = {
+    border: "1px solid #ccc",
+    padding: "0.5rem"
   };
 
   return (
@@ -131,6 +151,37 @@ function App() {
       <p style={{ marginTop: "1rem", whiteSpace: "pre-wrap" }}>
         {response}
       </p>
+
+      {tableData && tableData.length > 0 && (
+        <div style={{ marginTop: "2rem" }}>
+          <h2>📊 Emissions Data Table</h2>
+          <table style={{ borderCollapse: "collapse", width: "100%", marginTop: "1rem" }}>
+            <thead>
+              <tr>
+                <th style={thStyle}>Year</th>
+                <th style={thStyle}>State</th>
+                <th style={thStyle}>Economic Sector</th>
+                <th style={thStyle}>CO₂ Emissions</th>
+                <th style={thStyle}>Units</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...tableData]
+                .sort((a, b) => b.period - a.period)
+                .map((row) => (
+                  <tr key={row.period}>
+                    <td style={tdStyle}>{row.period}</td>
+                    <td style={tdStyle}>{row["state-name"]}</td>
+                    <td style={tdStyle}>{row["sector-name"]}</td>
+                    <td style={tdStyle}>{parseFloat(row.value).toFixed(3)}</td>
+                    <td style={tdStyle}>{row["value-units"]}</td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
     </div>
   );
 }
