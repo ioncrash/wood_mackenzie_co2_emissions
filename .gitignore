@@ -4,8 +4,8 @@ __pycache__/
 *.pyc
 
 # Node
-woods-mackenzie-frontend/node_modules/
-woods-mackenzie-frontend/build/
+frontend/woods-mackenzie-frontend/node_modules/
+frontend/woods-mackenzie-frontend/build/
 
 # OS / Editor junk
 .DS_Store
