@@ -89,15 +89,13 @@ def construct_claude_prompt(state: str, fuel: str, sector: str, tone: str, data:
         
         {data}
         
-        Summarize any trends you see as a bullet pointed list, making note of any peaks, valleys, or anomalies. There may be more than one of each. 
+        Summarize any overall trends you see, making note of any peaks, valleys, or anomalies. There may be more than one of each. 
 
-        Include a section about each decade and broad changes that occured within that decade.
+        Also include a section about each decade and broad changes that occured within that decade. Put an newline between each decade.
 
         Do this {tone}
 
         There's no need to comment that there are many possible factors behind these fluctuations, or to comment that further analysis and context are required. Just the summary, please.
-
-        Format your response as html using bullet points, with an empty line between each bullet point
     """
 
 
