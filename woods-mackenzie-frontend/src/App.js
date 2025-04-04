@@ -1,9 +1,13 @@
 import { useState } from "react";
+import InputForm from "./InputForm";
+import DataTable from "./DataTable";
+import Conversation from "./Conversation";
 
 function App() {
   const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
   const [tableData, setTableData] = useState([]);
+  const [messages, setMessages] = useState([]);
 
   const [form, setForm] = useState({
     state: "",
@@ -20,16 +24,24 @@ function App() {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (loading) return; // Prevent if already in-flight
+    if (loading) return;
     setLoading(true);
 
-    const query = new URLSearchParams(form).toString();
-
-    fetch(`http://localhost:8000/api/retrieve?${query}`)
+    fetch("http://localhost:8000/api/retrieve", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        form,
+        messages,
+      }),
+    })
       .then((res) => res.json())
       .then((data) => {
         setResponse(data.message);
-      
+        setMessages(data.conversation || []);
+
         const sortedTable = [...(data.data || [])].sort(
           (a, b) => Number(b.period) - Number(a.period)
         );
@@ -40,46 +52,12 @@ function App() {
         setResponse("Error: Something went wrong.");
       })
       .finally(() => setLoading(false));
-  };
 
-  const US_STATES = [
-    "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
-    "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
-    "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
-    "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
-    "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
-  ];
-
-  const FUEL_OPTIONS = {
-    CO: "Coal",
-    NG: "Natural Gas",
-    PE: "Petroleum",
-    TO: "All Fuel"
-  };
-
-  const SECTOR_OPTIONS = {
-    CC: "commercial",
-    IC: "industrial",
-    TC: "transportation",
-    EC: "electric power",
-    RC: "residential"
-  };
-
-  const thStyle = {
-    border: "1px solid #ccc",
-    padding: "0.5rem",
-    backgroundColor: "#f4f4f4",
-    textAlign: "left"
-  };
-  
-  const tdStyle = {
-    border: "1px solid #ccc",
-    padding: "0.5rem"
   };
 
   return (
     <div style={{ padding: "2rem" }}>
-      <h1>Welcome to my CO2 Emission Summarizer!</h1>
+      <h1>Welcome to My CO2 Emission Summarizer!</h1>
 
       <p>This app will retrieve historical CO2 emission data provided by the U.S. Energy Information Administration, then send it to Claude AI to summarize for you.</p>
       <p>You have a few options for what data to retrieve:</p>
@@ -88,100 +66,24 @@ function App() {
       <p>sector: The sector you'd like to see (e.g. residential, industrial)</p>
       <p>tone: The tone you would like Claude to respond in. Please use an adverb (e.g. professionally, sarcastically, "like a southern belle")</p>
 
-      <form onSubmit={handleSubmit}>
-        <label style={{ display: "block", marginBottom: "0.5rem" }}>
-          State:
-          <select
-            name="state"
-            value={form.state}
-            onChange={handleChangeForm}
-            style={{ marginLeft: "0.5rem" }}
-          >
-            <option value="">-- Select State --</option>
-            {US_STATES.map((abbr) => (
-              <option key={abbr} value={abbr}>
-                {abbr}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label style={{ display: "block", marginBottom: "0.5rem" }}>
-          Fuel:
-          <select
-            name="fuel"
-            value={form.fuel}
-            onChange={handleChangeForm}
-            style={{ marginLeft: "0.5rem" }}
-          >
-            <option value="">-- Select Fuel --</option>
-            {Object.entries(FUEL_OPTIONS).map(([code, label]) => (
-              <option key={code} value={code}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label style={{ display: "block", marginBottom: "0.5rem" }}>
-          Sector:
-          <select
-            name="sector"
-            value={form.sector}
-            onChange={handleChangeForm}
-            style={{ marginLeft: "0.5rem" }}
-          >
-            <option value="">-- Select Sector --</option>
-            {Object.entries(SECTOR_OPTIONS).map(([code, label]) => (
-              <option key={code} value={code}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <input
-          type="text"
-          name="tone"
-          placeholder="Tone"
-          value={form.tone}
-          onChange={handleChangeForm}
-          style={{ marginBottom: "1rem", display: "block" }}
-        />
-        <button type="submit">Submit</button>
-      </form>
+      <InputForm
+        form={form}
+        onChange={handleChangeForm}
+        onSubmit={handleSubmit}
+        loading={loading}
+      />
 
-      <p style={{ marginTop: "1rem", whiteSpace: "pre-wrap" }}>
+      {response && (<h1 style={{ marginTop: "1rem", whiteSpace: "pre-wrap" }}>
         {response}
-      </p>
+      </h1>)}
+      
+      <DataTable
+        data={tableData}
+      />
 
-      {tableData && tableData.length > 0 && (
-        <div style={{ marginTop: "2rem" }}>
-          <h2>📊 Emissions Data Table</h2>
-          <table style={{ borderCollapse: "collapse", width: "100%", marginTop: "1rem" }}>
-            <thead>
-              <tr>
-                <th style={thStyle}>Year</th>
-                <th style={thStyle}>State</th>
-                <th style={thStyle}>Economic Sector</th>
-                <th style={thStyle}>CO₂ Emissions</th>
-                <th style={thStyle}>Units</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[...tableData]
-                .sort((a, b) => b.period - a.period)
-                .map((row) => (
-                  <tr key={row.period}>
-                    <td style={tdStyle}>{row.period}</td>
-                    <td style={tdStyle}>{row["state-name"]}</td>
-                    <td style={tdStyle}>{row["sector-name"]}</td>
-                    <td style={tdStyle}>{parseFloat(row.value).toFixed(3)}</td>
-                    <td style={tdStyle}>{row["value-units"]}</td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
+      <Conversation
+        messages={messages}
+      />
     </div>
   );
 }

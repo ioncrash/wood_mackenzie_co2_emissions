@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 import boto3
 import requests
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
@@ -59,7 +59,7 @@ def request_eia_data(state: str, fuel: str, sector: str):
 
 
 def construct_claude_prompt(
-    state: str, fuel: str, sector: str, tone: str, data: List[Dict[str, Any]]
+    state: str, fuel: str, sector: str, data: List[Dict[str, Any]], tone: str
 ):
     fuel_lookup = {
         "CO": "coal",
@@ -89,39 +89,71 @@ def construct_claude_prompt(
 
         Also include a section about each decade and broad changes that occured within that decade. Put an newline between each decade.
 
-        Do this {tone}
+        If I have already sent a different set of data, include a section calling out any direct or indirect correlations between this and the coal data I sent previously, if there are any. Be specific about the years those correlations are most obvious
+
+        Do this {tone or "professionally"}
 
         There's no need to comment that there are many possible factors behind these fluctuations, or to comment that further analysis and context are required. Just the summary, please.
     """
 
 
 def perform_claude_request(
-    state: str, fuel: str, sector: str, tone: str, data: List[Dict[str, Any]]
+    state: str,
+    fuel: str,
+    sector: str,
+    tone: str,
+    data: List[Dict[str, Any]],
+    messages: List[Dict[str, str]] = [],
 ):
     bedrock = boto3.client("bedrock-runtime", region_name=AWS_REGION)
 
     prompt = construct_claude_prompt(
-        state=state, fuel=fuel, sector=sector, tone=tone, data=data
+        state=state, fuel=fuel, sector=sector, data=data, tone=tone
     )
 
+    messages.append({"role": "user", "content": prompt.strip()})
+
     body = {
-        "messages": [{"role": "user", "content": prompt.strip()}],
+        "messages": messages,
         "anthropic_version": "bedrock-2023-05-31",
         "max_tokens": 500,
         "temperature": 0.7,
     }
 
-    return bedrock.invoke_model(
+    claude_response = bedrock.invoke_model(
         modelId="anthropic.claude-3-sonnet-20240229-v1:0",
         contentType="application/json",
         accept="application/json",
         body=json.dumps(body),
     )
 
+    claude_response_body = json.loads(claude_response["body"].read())
 
-@app.get("/api/retrieve")
-def retrieve(state: str, fuel: str, sector: str, tone: str = "professionally"):
+    if (
+        not claude_response_body["content"]
+        or not claude_response_body["content"][0]["text"]
+    ):
+        message = f"No text in response from Claude. claude_response_body: {claude_response_body}"
+        print(message)
+        raise Exception(message)
+
+    response_text = claude_response_body["content"][0]["text"]
+
+    messages.append({"role": "assistant", "content": response_text})
+
+    return messages
+
+
+@app.post("/api/retrieve")
+async def retrieve(request: Request):
     try:
+        body = await request.json()
+        state = body["form"]["state"]
+        fuel = body["form"]["fuel"]
+        sector = body["form"]["sector"]
+        tone = body["form"].get("tone")
+        past_messages = body.get("messages", [])
+
         eia_result = request_eia_data(state=state, fuel=fuel, sector=sector)
 
         data = eia_result.get("response", {}).get("data")
@@ -135,24 +167,18 @@ def retrieve(state: str, fuel: str, sector: str, tone: str = "professionally"):
         return {"message": message, "data": []}
 
     try:
-        claude_response = perform_claude_request(
-            state=state, fuel=fuel, sector=sector, tone=tone, data=data
+        conversation = perform_claude_request(
+            state=state,
+            fuel=fuel,
+            sector=sector,
+            tone=tone,
+            data=data,
+            messages=past_messages,
         )
 
-        claude_response_body = json.loads(claude_response["body"].read())
-
-        if (
-            not claude_response_body["content"]
-            or not claude_response_body["content"][0]["text"]
-        ):
-            message = f"No text in response from Claude. claude_response_body: {claude_response_body}"
-            print(message)
-            return {"message": message, "data": []}
-
-        message = claude_response_body["content"][0]["text"]
     except Exception as e:
         message = f"Encountered exception when sending a request to Claude. Error: {e}"
         print(message)
         return {"message": message, "data": []}
 
-    return {"message": message, "data": data}
+    return {"message": "", "data": data, "conversation": conversation}
