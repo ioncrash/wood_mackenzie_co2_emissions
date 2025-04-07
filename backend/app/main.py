@@ -144,34 +144,38 @@ def perform_claude_request(
     return messages
 
 
+from fastapi import FastAPI, Query, HTTPException
+import logging
+
+# Setup logger
+logger = logging.getLogger("uvicorn.error")
+
 @app.get("/api/retrieve")
 def retrieve(
     state: str = Query(...),
     fuel: str = Query(...),
     sector: str = Query(...),
     tone: Optional[str] = Query("professionally"),
-    messages: Optional[str] = Query("[]")  # JSON-encoded string
+    messages: Optional[str] = Query("[]")
 ):
+    # Parse messages safely
     try:
         past_messages = json.loads(messages)
-    except:
-        message = f"malformed json in 'messages' {messages}"
-        print(message)
-        return {"message": message, "data": []}
+    except json.JSONDecodeError:
+        logger.error(f"Malformed JSON in 'messages': {messages}")
+        raise HTTPException(status_code=400, detail="Malformed 'messages' parameter")
 
+    # Get EIA data
     try:
         eia_result = request_eia_data(state=state, fuel=fuel, sector=sector)
-
-        data = eia_result.get("response", {}).get("data")
+        data = eia_result.get("response", {}).get("data", [])
         if not data:
-            message = f"No data in response from EIA. eia_result: {eia_result}"
-            print(message)
-            return {"message": message, "data": []}
+            raise HTTPException(status_code=404, detail="No data found for given parameters")
     except Exception as e:
-        message = f"Encountered exception when sending a request to EIA. Error: {e}"
-        print(message)
-        return {"message": message, "data": []}
+        logger.error(f"EIA request failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch EIA data: {e}")
 
+    # Call Claude
     try:
         conversation = perform_claude_request(
             state=state,
@@ -181,10 +185,12 @@ def retrieve(
             data=data,
             messages=past_messages,
         )
-
     except Exception as e:
-        message = f"Encountered exception when sending a request to Claude. Error: {e}"
-        print(message)
-        return {"message": message, "data": []}
+        logger.error(f"Claude request failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Claude request error: {e}")
 
-    return {"message": "", "data": data, "conversation": conversation}
+    return {
+        "message": "",
+        "data": data,
+        "conversation": conversation
+    }
