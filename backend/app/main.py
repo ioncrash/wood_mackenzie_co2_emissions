@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 import boto3
 import requests
 from dotenv import load_dotenv
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
@@ -144,25 +144,19 @@ def perform_claude_request(
     return messages
 
 
-from fastapi import FastAPI, Query, HTTPException
-import logging
-
-# Setup logger
-logger = logging.getLogger("uvicorn.error")
-
 @app.get("/api/retrieve")
 def retrieve(
     state: str = Query(...),
     fuel: str = Query(...),
     sector: str = Query(...),
     tone: Optional[str] = Query("professionally"),
-    messages: Optional[str] = Query("[]")
+    messages: Optional[str] = Query("[]"),
 ):
     # Parse messages safely
     try:
         past_messages = json.loads(messages)
     except json.JSONDecodeError:
-        logger.error(f"Malformed JSON in 'messages': {messages}")
+        print(f"Malformed JSON in 'messages': {messages}")
         raise HTTPException(status_code=400, detail="Malformed 'messages' parameter")
 
     # Get EIA data
@@ -170,9 +164,11 @@ def retrieve(
         eia_result = request_eia_data(state=state, fuel=fuel, sector=sector)
         data = eia_result.get("response", {}).get("data", [])
         if not data:
-            raise HTTPException(status_code=404, detail="No data found for given parameters")
+            raise HTTPException(
+                status_code=404, detail="No data found for given parameters"
+            )
     except Exception as e:
-        logger.error(f"EIA request failed: {e}")
+        print(f"EIA request failed: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch EIA data: {e}")
 
     # Call Claude
@@ -186,11 +182,7 @@ def retrieve(
             messages=past_messages,
         )
     except Exception as e:
-        logger.error(f"Claude request failed: {e}")
+        print(f"Claude request failed: {e}")
         raise HTTPException(status_code=500, detail=f"Claude request error: {e}")
 
-    return {
-        "message": "",
-        "data": data,
-        "conversation": conversation
-    }
+    return {"message": "", "data": data, "conversation": conversation}
