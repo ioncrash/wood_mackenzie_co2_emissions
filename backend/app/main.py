@@ -116,7 +116,7 @@ def perform_claude_request(
     body = {
         "messages": messages,
         "anthropic_version": "bedrock-2023-05-31",
-        "max_tokens": 500,
+        "max_tokens": 1500,
         "temperature": 0.7,
     }
 
