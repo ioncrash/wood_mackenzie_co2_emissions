@@ -27,16 +27,15 @@ function App() {
     if (loading) return;
     setLoading(true);
 
-    fetch("http://localhost:8000/api/retrieve", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        form,
-        messages,
-      }),
-    })
+    const query = new URLSearchParams({
+      state: form.state,
+      fuel: form.fuel,
+      sector: form.sector,
+      tone: form.tone || "professionally",
+      messages: JSON.stringify(messages),
+    }).toString();
+    
+    fetch(`http://localhost:8000/api/retrieve?${query}`)
       .then((res) => res.json())
       .then((data) => {
         setResponse(data.message);

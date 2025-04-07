@@ -1,11 +1,11 @@
 import json
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import boto3
 import requests
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
@@ -144,16 +144,22 @@ def perform_claude_request(
     return messages
 
 
-@app.post("/api/retrieve")
-async def retrieve(request: Request):
+@app.get("/api/retrieve")
+def retrieve(
+    state: str = Query(...),
+    fuel: str = Query(...),
+    sector: str = Query(...),
+    tone: Optional[str] = Query("professionally"),
+    messages: Optional[str] = Query("[]")  # JSON-encoded string
+):
     try:
-        body = await request.json()
-        state = body["form"]["state"]
-        fuel = body["form"]["fuel"]
-        sector = body["form"]["sector"]
-        tone = body["form"].get("tone")
-        past_messages = body.get("messages", [])
+        past_messages = json.loads(messages)
+    except:
+        message = f"malformed json in 'messages' {messages}"
+        print(message)
+        return {"message": message, "data": []}
 
+    try:
         eia_result = request_eia_data(state=state, fuel=fuel, sector=sector)
 
         data = eia_result.get("response", {}).get("data")
