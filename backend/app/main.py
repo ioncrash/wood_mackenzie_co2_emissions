@@ -156,20 +156,24 @@ def retrieve(
     try:
         past_messages = json.loads(messages)
     except json.JSONDecodeError:
-        print(f"Malformed JSON in 'messages': {messages}")
-        raise HTTPException(status_code=400, detail="Malformed 'messages' parameter")
+        message = f"Malformed JSON in 'messages': {messages}"
+        print(message)
+        raise HTTPException(status_code=400, detail=message)
 
     # Get EIA data
     try:
         eia_result = request_eia_data(state=state, fuel=fuel, sector=sector)
         data = eia_result.get("response", {}).get("data", [])
         if not data:
+            message = f"no data in EIA response. Response: {eia_result}"
+            print(message)
             raise HTTPException(
-                status_code=404, detail="No data found for given parameters"
+                status_code=404, detail=message
             )
     except Exception as e:
-        print(f"EIA request failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch EIA data: {e}")
+        message = f"EIA request failed: {e}"
+        print(message)
+        raise HTTPException(status_code=500, detail=message)
 
     # Call Claude
     try:
@@ -182,7 +186,8 @@ def retrieve(
             messages=past_messages,
         )
     except Exception as e:
-        print(f"Claude request failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Claude request error: {e}")
+        message = f"Claude request failed: {e}"
+        print(message)
+        raise HTTPException(status_code=500, detail=message)
 
     return {"message": "", "data": data, "conversation": conversation}
