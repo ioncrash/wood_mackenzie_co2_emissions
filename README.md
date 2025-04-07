@@ -55,6 +55,10 @@ As it stands, the app is pretty slow. There are a few things we could do about t
 
 # Considerations and improvements for the app in general
 
+I can't say for sure that Claude is really the best tool for performing complex analysis on large datasets. For this app, it seems to be doing just fine at giving general takeaways from limited data, but for really precise analysis, there are existing data science tools and techniques that might be better suited for the job. If acccuracy was important, I would want to preprocess the data by running it through some of those tools, then using Claude to summarize those insights, rather than having Claude do everything itself.
+
+One of the great advantages of AI and Claude in particular is its ability to use wide historical context to suggest correlations or interpretations of the data. It would be interesting to take an app like this and ask Claude to offer explanations of why changes occured at the times they did. This will make the output more succeptable to hallucination, but it would also offer interesting commentary that might be useful for a human reader.
+
 The app is lacking in some of the guardrails I would expect for a full-stack app, such as handling invalid input on both the front and back ends and gracefully handling some kinds of errors. 
 
 Unit and integration tests would be useful, especially on the front end
